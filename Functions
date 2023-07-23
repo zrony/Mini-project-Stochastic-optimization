@@ -1,0 +1,180 @@
+import pandas as pd
+import random
+import copy
+
+
+def longest_subsequence_nlogn(coordinates):
+    n = len(coordinates)
+    # Sort the coordinates based on x values in descending order, if tied, then by y in descending order
+    sorted_coords = sorted(coordinates, key=lambda coord: (coord[0], coord[1]), reverse=True)
+
+    # Initialize dynamic programming list and ends list
+    dp = [0] * n
+    ends = [0] * n
+    dp[0] = 1
+    ends[0] = sorted_coords[0]
+    length = 1
+
+    for i in range(1, n):
+        # Binary search to find the position of current coordinate in ends list
+        left, right = 0, length
+        while left < right:
+            mid = (left + right) // 2
+            if ends[mid][1] <= sorted_coords[i][1]:
+                right = mid
+            else:
+                left = mid + 1
+
+        dp[i] = left + 1
+        ends[left] = sorted_coords[i]
+
+        if left == length:
+            length += 1
+
+    # Backtrack to find the longest subsequence
+    longest_subseq = []
+    curr_len = length
+    for i in reversed(range(n)):
+        if dp[i] == curr_len:
+            longest_subseq.append(sorted_coords[i])
+            curr_len -= 1
+
+    return length, longest_subseq[::-1]
+
+
+def finding_heaviest_subsequence(coordinates):
+    dp = [0] * len(coordinates)  # Initialize the dp table
+    dp[0] = coordinates[0][2]  # Set the weight of the first point as the first value in the dp table
+
+    parent = [-1] * len(coordinates)  # To keep track of the path
+
+    # Fill up the dp table
+    for i in range(1, len(coordinates)):
+        for j in range(i):
+            # Update dp[i] only if the x and y coordinates of j-th point are strictly less than the x and y
+            # coordinates of i-th point
+            if coordinates[j][1] < coordinates[i][1] and dp[i] < dp[j]:
+                dp[i] = dp[j]
+                parent[i] = j
+        dp[i] += coordinates[i][2]
+
+    # Find the index with the maximum weight
+    max_index = dp.index(max(dp))
+
+    # Retrieve the path
+    path = []
+    weight_sum = 0  # Initialize the sum of weights
+    while max_index != -1:
+        path.append(coordinates[max_index])
+        weight_sum += coordinates[max_index][2]  # Add the weight of the current point to the sum of weights
+        max_index = parent[max_index]
+    path.reverse()
+
+    return weight_sum, path
+
+
+def convert_excel_to_array(path, sheet_name):
+    df = pd.read_excel(path, sheet_name=sheet_name)
+    x = df['Column 1'].values
+    y = df['Column 2'].values
+
+    coordinates = []
+
+    for i in range(len(x)):
+        coordinates.append((x[i], y[i], 1))
+
+    return coordinates
+
+# first algorithm
+def update_weights_randomly(coordinates):
+    # Finding the longest subsequence of the array
+    W, longest_subseq = longest_subsequence_nlogn(coordinates)
+    sub_array = []
+
+    # remove the longest subsequence from the optional set of points to check
+    possible_points = copy.copy(coordinates)
+    for point in longest_subseq:
+        possible_points.remove(point)
+    changeable_points = set(possible_points)
+
+    # choose a point randomly and if it's not part of the heaviest path - change its weight to 2
+    while changeable_points:
+        random_point = random.choice(list(changeable_points))
+        index = coordinates.index(random_point)
+        coordinates[index] = (random_point[0], random_point[1], 2)
+        new_W, sub = finding_heaviest_subsequence(coordinates)
+        if new_W <= W:
+            sub_array.append(coordinates[index])
+        else:
+            coordinates[index] = (random_point[0], random_point[1], 1)
+        changeable_points.remove(random_point)
+
+    return len(sub_array), sub_array
+
+# second algorithm
+def update_weights_iterative(coordinates):
+    # finding the longest subsequence of the array
+    W, longest_subseq = longest_subsequence_nlogn(coordinates)
+    sub_array = []
+
+    # remove the longest subsequence from the optional set of point to check
+    possible_points = copy.copy(coordinates)
+    for point in longest_subseq:
+        possible_points.remove(point)
+    changeable_points = set(possible_points)
+
+    # check every point in iterative order, and if it's not part of the heaviest path - change its weight to 2
+    for point in changeable_points:
+        index = coordinates.index(point)
+        coordinates[index] = (point[0], point[1], 2)
+        new_W, sub = finding_heaviest_subsequence(coordinates)
+        if new_W <= W:
+            sub_array.append(coordinates[index])
+        else:
+            coordinates[index] = (point[0], point[1], 1)
+
+    return len(sub_array), sub_array
+
+# third algorithm
+def find_coordinate_with_largest_difference(coordinates):
+    largest_difference = float('-inf')
+    result_coordinate = None
+
+    for coord in coordinates:
+        x, y = coord[0], coord[1]
+        difference = abs(x - y)
+        if difference > largest_difference:
+            largest_difference = difference
+            result_coordinate = coord
+
+    return result_coordinate
+
+
+def update_weights_intelligence_algorithm(coordinates):
+    W, longest_subseq = longest_subsequence_nlogn(coordinates)
+    # Insert all the coordinates into the 'changeablePoints' set
+    changeablePoints = set(coordinates)
+    # Initialize the 'changedPoints' set to keep track of points with updated weights
+    changedPoints = set()
+
+    # Iterate until the 'changeablePoints' set is empty
+    while changeablePoints:
+
+        # Choose the point with one of the methods
+        target_coord = find_coordinate_with_largest_difference(changeablePoints)
+        index = coordinates.index(target_coord)
+        updated_coord = target_coord[:2] + (2,)  # increase weight
+        coordinates[index] = updated_coord  # update coordinate
+        new_weight, chain = finding_heaviest_subsequence(coordinates)
+
+        # Check if the new weight is heavier than the heaviest chain
+        if new_weight > W:
+            # break, return to original state
+            coordinates[index] = target_coord
+        else:
+            changedPoints.add(updated_coord)  # We can change the point's weight.
+
+        # Remove the checked point from the 'changeablePoints' set
+        changeablePoints.remove(target_coord)  # Remove the target coordinate from the set
+
+    return changedPoints
