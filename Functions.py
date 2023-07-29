@@ -91,7 +91,7 @@ def update_weights_randomly(coordinates):
         random_point = random.choice(list(changeable_points))
         index = coordinates.index(random_point)
         coordinates[index] = (random_point[0], random_point[1], 2)
-        new_W, sub = finding_heaviest_subsequence(coordinates)
+        new_W, sub = heaviest_increasing_subsequence(coordinates)
         
         # Check if the new weight is heavier than the heaviest chain
         if new_W <= W:
