@@ -115,9 +115,7 @@ def update_weights_iterative(coordinates):
     changeable_points = set(possible_points)
 
     # check every point in iterative order, and if it's not part of the heaviest path - change its weight to 2
-    count = 0
     for point in changeable_points:
-        count +=1
         index = coordinates.index(point)
         coordinates[index] = (point[0], point[1], 2)
         new_W, sub= heaviest_increasing_subsequence(coordinates)
