@@ -92,6 +92,8 @@ def update_weights_randomly(coordinates):
         index = coordinates.index(random_point)
         coordinates[index] = (random_point[0], random_point[1], 2)
         new_W, sub = finding_heaviest_subsequence(coordinates)
+        
+        # Check if the new weight is heavier than the heaviest chain
         if new_W <= W:
             sub_array.append(coordinates[index])
         else:
@@ -119,8 +121,8 @@ def update_weights_iterative(coordinates):
         index = coordinates.index(point)
         coordinates[index] = (point[0], point[1], 2)
         new_W, sub= heaviest_increasing_subsequence(coordinates)
-        if count % 10 == 0:
-            print(count)
+
+        # Check if the new weight is heavier than the heaviest chain
         if new_W <= W:
             sub_array.append(coordinates[index])
         else:
@@ -149,18 +151,14 @@ def update_weights_intelligence_algorithm(coordinates):
     changeablePoints = set(coordinates)
     # Initialize the 'changedPoints' set to keep track of points with updated weights
     changedPoints = set()
-    count = 0
     # Iterate until the 'changeablePoints' set is empty
     while changeablePoints:
-        count +=1
         # Choose the point with one of the methods
         target_coord = find_coordinate_with_largest_difference(changeablePoints)
         index = coordinates.index(target_coord)
         updated_coord = target_coord[:2] + (2,)  # increase weight
         coordinates[index] = updated_coord  # update coordinate
         new_weight, chain = heaviest_increasing_subsequence(coordinates)
-        if count % 10 == 0:
-            print(count)
 
         # Check if the new weight is heavier than the heaviest chain
         if new_weight > W:
